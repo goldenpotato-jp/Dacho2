@@ -1,8 +1,10 @@
 // main.cpp
 #include "Game/Game.h"
 #include "Players/RandomAI/RandomAI.h"
+#include "Players/Human/Human.h"
 
 int main() {
     RandomAI random;
-    Game::play(random, random, true);
+    Human human;
+    Game::play(random, human, true);
 }

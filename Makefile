@@ -9,7 +9,7 @@ LDFLAGS  = -Ofast -march=native -flto
 
 # 実行ファイル名とソースファイルの指定
 TARGET   = dacho2
-SRCS     = main.cpp Board/Board.cpp Game/Game.cpp Players/RandomAI/RandomAI.cpp
+SRCS     = $(shell find . -name "*.cpp")
 OBJS     = $(SRCS:.cpp=.o)
 
 # デフォルトターゲット
