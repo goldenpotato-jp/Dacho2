@@ -255,10 +255,10 @@ bool Board::is_end() {
 
 // Perftテスト
 void Board::perft(int depth) {
-    // 初期盤面を生成
-    Board board;
     // テスト開始時間を記録
     auto start = std::chrono::steady_clock::now();
+    // 初期盤面を生成
+    Board board;
     // 再帰関数でテスト
     uint64_t nodes = board.perft_search(depth);
     // テスト終了時間を記録
@@ -267,12 +267,17 @@ void Board::perft(int depth) {
     std::chrono::duration<double> elapsed = end - start;
     // 毎秒ノード数を計算
     double nps = nodes / elapsed.count();
+
     // テスト結果を出力
     std::cout << "=== Perft Test ===\n";
+    // 深さ
     std::cout << "Depth : " << depth << '\n';
+    // ノード数
     std::cout << "Nodes : " << nodes << '\n';
-    std::cout << "Time  : " << elapsed.count() << " s\n";
-    std::cout << "NPS   : " << nps << " nps\n";
+    // 時間
+    std::cout << "Time : " << elapsed.count() << " s\n";
+    // 毎秒ノード数
+    std::cout << "NPS : " << nps << " nps\n";
     
 }
 

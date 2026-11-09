@@ -27,6 +27,8 @@ struct Game {
     // print_flag: 対局を出力するかどうか
     template<typename Player1, typename Player2>
     static GameResult play(Player1& player1, Player2& player2, bool print_flag) {
+        // 対局開始時間を記録
+        auto start = std::chrono::steady_clock::now();
         // 初期盤面を生成
         Board board;
         // 手番
@@ -42,6 +44,7 @@ struct Game {
             // 盤面を出力
             print_board(board, turn);
         }
+
         // メインループ
         while(true) {
             // 出力
@@ -86,6 +89,7 @@ struct Game {
             // 盤面を出力
             if(print_flag) print_board(board, turn);
         }
+        
         // 終局
         // 手番を先手に揃える
         if(!turn) {
@@ -102,21 +106,31 @@ struct Game {
         else if(game_result.player1_score < game_result.player2_score) game_result.result = 2;
         // 引き分け
         else game_result.result = 0;
-        // 対局結果を出力
+        
+        // 出力
         if(print_flag) {
+            // 対局終了時間を記録
+            auto end = std::chrono::steady_clock::now();
+            // 対局時間を計算
+            std::chrono::duration<double> elapsed = end - start;
+            
+            // 対局結果を出力
             std::cout << "=== Game Over ===\n";
             // 盤面を出力
             print_board(board, turn);
             // 石数を出力
-            std::cout << "Player1 score " << game_result.player1_score << '\n';
-            std::cout << "Player2 score " << game_result.player2_score << '\n';
+            std::cout << "Player1 score : " << game_result.player1_score << '\n';
+            std::cout << "Player2 score : " << game_result.player2_score << '\n';
             // 先手勝ち
             if(game_result.player1_score > game_result.player2_score) std::cout << "Player1 win\n";
             // 後手勝ち
             else if(game_result.player1_score < game_result.player2_score) std::cout << "Player2 win\n";
             // 引き分け
             else std::cout << "Draw\n";
+            // 対局時間を出力
+            std::cout << "Time : " << elapsed.count() << " s\n";
         }
+
         return game_result;
     }
 };

@@ -3,9 +3,10 @@
 #include "Players/Dacho2AIBeta/Dacho2AIBeta.h"
 #include "Players/RandomAI/RandomAI.h"
 #include "Players/Human/Human.h"
+#include "Test/Test.h"
 
 int main() {
-    RandomAI random;
+    Human human;
     Dacho2AIBeta dacho;
-    Game::play(random, dacho, true);
+    Game::play(dacho, human, true);
 }
