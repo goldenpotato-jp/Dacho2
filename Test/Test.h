@@ -42,7 +42,6 @@ struct Test {
         auto end = std::chrono::steady_clock::now();
         // 対局時間を計算
         std::chrono::duration<double> elapsed = end - start;
-        
         // テスト結果を出力
         std::cout << "=== Test Result ===\n";
         // テスト対局数

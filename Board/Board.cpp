@@ -242,15 +242,21 @@ void Board::pass() {
     std::swap(player, opponent);
 }
 
-//　終局判定
-bool Board::is_end() {
-    // 自分が着手できるなら終局ではない
-    if(get_legal()) return false;
-    // 手番交代
-    Board tmp = *this;
-    tmp.pass();
-    // 相手も着手できないなら終局
-    return !tmp.get_legal();
+// 自分の石数を取得
+int Board::player_num() const {
+    return __builtin_popcountll(player);
+}
+
+// 相手の石数を取得
+int Board::opponent_num() const {
+    return __builtin_popcountll(opponent);
+}
+
+// 勝敗を取得
+int Board::get_result() const {
+    if(player_num() > opponent_num()) return 1;
+    if(player_num() < opponent_num()) return 2;
+    return 0;
 }
 
 // Perftテスト

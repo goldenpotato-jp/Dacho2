@@ -9,6 +9,7 @@ struct Board {
     uint64_t player;
     // 相手の石
     uint64_t opponent;
+    
     // コンストラクタ
     Board();
     // 合法手
@@ -18,8 +19,13 @@ struct Board {
     void reverse(int pos);
     // パス
     void pass();
-    // 終局判定
-    bool is_end();
+    // 自分の石数を取得
+    int player_num() const;
+    // 相手の石数を取得
+    int opponent_num() const;
+    // 勝敗を取得
+    // 1: 自分勝ち、2: 相手勝ち、0: 引き分け
+    int get_result() const;
     // Perftテスト
     // 深さdepthまでテスト
     static void perft(int depth);

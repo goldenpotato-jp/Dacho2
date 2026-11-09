@@ -36,7 +36,6 @@ struct Game {
         bool turn = true;
         // 手数
         int ply = 1;
-
         // 出力
         if(print_flag) {
             // 対局開始を出力
@@ -44,7 +43,6 @@ struct Game {
             // 盤面を出力
             print_board(board, turn);
         }
-
         // メインループ
         while(true) {
             // 出力
@@ -89,31 +87,23 @@ struct Game {
             // 盤面を出力
             if(print_flag) print_board(board, turn);
         }
-        
         // 終局
         // 手番を先手に揃える
         if(!turn) {
             board.pass();
             turn = true;
         }
-        // 対局結果を計算
+        // 対局結果を取得
         GameResult game_result;
-        game_result.player1_score = __builtin_popcountll(board.player);
-        game_result.player2_score = __builtin_popcountll(board.opponent);
-        // 先手勝ち
-        if(game_result.player1_score > game_result.player2_score) game_result.result = 1;
-        // 後手勝ち
-        else if(game_result.player1_score < game_result.player2_score) game_result.result = 2;
-        // 引き分け
-        else game_result.result = 0;
-        
+        game_result.player1_score = board.player_num();
+        game_result.player2_score = board.opponent_num();
+        game_result.result = board.get_result();
         // 出力
         if(print_flag) {
             // 対局終了時間を記録
             auto end = std::chrono::steady_clock::now();
             // 対局時間を計算
             std::chrono::duration<double> elapsed = end - start;
-            
             // 対局結果を出力
             std::cout << "=== Game Over ===\n";
             // 盤面を出力
@@ -130,7 +120,7 @@ struct Game {
             // 対局時間を出力
             std::cout << "Time : " << elapsed.count() << " s\n";
         }
-
+        // 対局結果を返す
         return game_result;
     }
 };

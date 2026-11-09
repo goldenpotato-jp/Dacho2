@@ -7,6 +7,8 @@
 
 int main() {
     Human human;
-    Dacho2AIBeta dacho;
-    Game::play(dacho, human, true);
+    // RandomAI random;
+    Dacho2AIBeta dacho(8);
+    Game::play(human, dacho, true);
+    // Test::test(random, dacho, 100);
 }
