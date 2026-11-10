@@ -1,3 +1,6 @@
-# ビルド生成物
+# .gitignore
+
 *.o
+.gitignore
 dacho2
+main.cpp

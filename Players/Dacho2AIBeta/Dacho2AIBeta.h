@@ -22,8 +22,8 @@ struct Dacho2AIBeta {
     Dacho2AIBeta(int depth);
     // 盤面を評価
     static int eval_board(const Board& board);
-    // Negamax法用の再帰関数
-    int search_node(const Board& board, int cur_depth);
+    // Negaalpha法用の再帰関数
+    int search_node(const Board& board, int cur_depth, int alpha, int beta);
     // 手を選択
     int select_move(const Board& board, uint64_t legal, bool print_flag);
 };

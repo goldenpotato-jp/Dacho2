@@ -39,8 +39,8 @@ int Dacho2AIBeta::eval_board(const Board& board) {
     return score;
 }
 
-// Negamax法用の再帰関数
-int Dacho2AIBeta::search_node(const Board& board, int cur_depth) {
+// Negaalpha法用の再帰関数
+int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int beta) {
     // ノード数を1増やす
     ++nodes;
     // 葉ノードなので評価値を返す
@@ -53,13 +53,16 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth) {
         Board tmp = board;
         tmp.pass();
         // 相手も着手できない場合は終局
-        // 評価値としてINF * (自分の石数 - 相手の石数)を返す
-        if(!tmp.get_legal()) return INF * (board.player_num() - board.opponent_num());
+        if(!tmp.get_legal()) {
+            // 石数の差を計算
+            int score = board.player_num() - board.opponent_num();
+            if(score > 0) return WIN_SCORE + score;
+            if(score < 0) return -WIN_SCORE + score;
+            return 0;
+        }
         // 相手が着手できる場合はパスした盤面を探索
-        return -search_node(tmp, cur_depth - 1);
+        return -search_node(tmp, cur_depth - 1, -beta, -alpha);
     }
-    // 暫定最高評価値
-    int max_score = -INF;
     // 合法手を探索
     while(legal) {
         // 合法手を取得
@@ -69,14 +72,16 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth) {
         tmp.reverse(move);
         tmp.pass();
         // 評価値を取得
-        int score = -search_node(tmp, cur_depth - 1);
-        // 最高評価値より高いなら更新
-        if(score > max_score) max_score = score;
+        int score = -search_node(tmp, cur_depth - 1, -beta, -alpha);
+        // ベータ値以上なら枝刈り
+        if(score >= beta) return beta;
+        // アルファ値より高いなら更新
+        if(score > alpha) alpha = score;
         // legalの最下位ビットを消去
         legal &= legal - 1ULL;
     }
-    // 評価値を返す
-    return max_score;
+    // アルファ値を返す
+    return alpha;
 }
 
 // 手を選択
@@ -96,7 +101,7 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
         tmp.reverse(move);
         tmp.pass();
         // 評価値を取得
-        int score = -search_node(tmp, depth - 1);
+        int score = -search_node(tmp, depth - 1, -INF, -max_score);
         // 暫定最善手がないまたは最高評価値より高いなら更新
         if(best_move == -1 || score > max_score) {
             max_score = score;
