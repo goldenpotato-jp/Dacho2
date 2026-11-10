@@ -1,6 +1,5 @@
 # .gitignore
 
 *.o
-.gitignore
 dacho2
 main.cpp
