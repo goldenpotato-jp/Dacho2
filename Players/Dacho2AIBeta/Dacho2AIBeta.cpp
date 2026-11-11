@@ -1,6 +1,7 @@
 // Dacho2AIBeta.cpp
 #include "Dacho2AIBeta.h"
 #include "../../Const/const.h"
+#include "../../Timer/Timer.h"
 
 // Dacho2AIBeta
 
@@ -86,8 +87,8 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
 
 // 手を選択
 int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_flag) {
-    // 対局開始時間を記録
-    auto start = std::chrono::steady_clock::now();
+    // 探索開始時間を記録
+    double start = Timer::get_sec();
     // ノード数をリセット
     nodes = 0;
     // max_score: 暫定最高評価値、best_move: 暫定最善手
@@ -112,16 +113,16 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
     }
     // 出力
     if(print_flag) {
-        // テスト終了時間を記録
-        auto end = std::chrono::steady_clock::now();
-        // テスト時間を計算
-        std::chrono::duration<double> elapsed = end - start;
+        // 探索終了時間を記録
+        double end = Timer::get_sec();
+        // 探索時間を計算
+        double search_time = end - start;
         // 毎秒ノード数を計算
-        double nps = nodes / elapsed.count();
+        double nps = nodes / search_time;
         // ノード数
         std::cout << "Nodes : " << nodes << '\n';
         // 時間
-        std::cout << "Time : " << elapsed.count() << " s\n";
+        std::cout << "Time : " << search_time << " s\n";
         // 毎秒ノード数
         std::cout << "NPS : " << nps << " nps\n";
     }

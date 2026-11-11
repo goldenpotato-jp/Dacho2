@@ -1,5 +1,6 @@
 // Board.cpp
 #include "Board.h"
+#include "../Timer/Timer.h"
 
 // 盤面
 
@@ -262,17 +263,17 @@ int Board::get_result() const {
 // Perftテスト
 void Board::perft(int depth) {
     // テスト開始時間を記録
-    auto start = std::chrono::steady_clock::now();
+    double start = Timer::get_sec();
     // 初期盤面を生成
     Board board;
     // 再帰関数でテスト
     uint64_t nodes = board.perft_search(depth);
     // テスト終了時間を記録
-    auto end = std::chrono::steady_clock::now();
+    double end = Timer::get_sec();
     // テスト時間を計算
-    std::chrono::duration<double> elapsed = end - start;
+    double test_time = end - start;
     // 毎秒ノード数を計算
-    double nps = nodes / elapsed.count();
+    double nps = nodes / test_time;
 
     // テスト結果を出力
     std::cout << "=== Perft Test ===\n";
@@ -281,7 +282,7 @@ void Board::perft(int depth) {
     // ノード数
     std::cout << "Nodes : " << nodes << '\n';
     // 時間
-    std::cout << "Time : " << elapsed.count() << " s\n";
+    std::cout << "Time : " << test_time << " s\n";
     // 毎秒ノード数
     std::cout << "NPS : " << nps << " nps\n";
     
