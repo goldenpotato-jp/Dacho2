@@ -26,4 +26,7 @@ struct Dacho2AIBeta {
     int search_node(const Board& board, int cur_depth, int alpha, int beta);
     // 手を選択
     int select_move(const Board& board, uint64_t legal, bool print_flag);
+    // Perftテスト
+    // 深さはdepth
+    void perft();
 };

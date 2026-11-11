@@ -129,3 +129,31 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
     // 選択した手を返す
     return best_move;
 }
+
+// Perftテスト
+void Dacho2AIBeta::perft() {
+    // テスト開始時間を記録
+    double start = Timer::get_sec();
+    // ノード数をリセット
+    nodes = 0;
+    // 盤面を初期化
+    Board board;
+    // テスト
+    search_node(board, depth, -INF, INF);
+    // テスト終了時間を記録
+    double end = Timer::get_sec();
+    // 探索時間を計算
+    double search_time = end - start;
+    // 毎秒ノード数を計算
+    double nps = nodes / search_time;
+    // テスト結果を出力
+    std::cout << "=== Perft Test ===\n";
+    // 深さ
+    std::cout << "Depth : " << depth << '\n';
+    // ノード数
+    std::cout << "Nodes : " << nodes << '\n';
+    // 時間
+    std::cout << "Time : " << search_time << " s\n";
+    // 毎秒ノード数
+    std::cout << "NPS : " << nps << " nps\n";
+}
