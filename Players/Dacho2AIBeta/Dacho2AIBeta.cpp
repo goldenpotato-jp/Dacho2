@@ -34,7 +34,7 @@ int Dacho2AIBeta::eval_board(const Board& board) {
     // 7行目
     score += weight_LUT2[(player >> 48) & 0xFF] - weight_LUT2[(opponent >> 48) & 0xFF];
     // 8行目
-    score += weight_LUT1[(player >> 56) & 0xFF] - weight_LUT1[(opponent >> 56) & 0xFF];
+    score += weight_LUT1[player >> 56] - weight_LUT1[opponent >> 56];
 
     // 評価値を返す
     return score;
