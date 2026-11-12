@@ -6,9 +6,11 @@
 // Dacho2AIBeta
 
 // コンストラクタ
-Dacho2AIBeta::Dacho2AIBeta(int depth):
-    // 探索深さ
-    depth(depth) {}
+Dacho2AIBeta::Dacho2AIBeta(int min_depth, double min_time):
+    // 最低探索深さ
+    min_depth(min_depth),
+    // 最低探索時間
+    min_time(min_time) {}
 
 // 盤面を評価
 int Dacho2AIBeta::eval_board(const Board& board) {
@@ -132,10 +134,8 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
     return alpha;
 }
 
-// 手を選択
-int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_flag) {
-    // 探索開始時間を記録
-    double start = Timer::get_sec();
+// 深さに基づいて探索する
+int Dacho2AIBeta::select_depth(const Board& board, uint64_t legal, int cur_depth) {
     // ノード数をリセット
     nodes = 0;
     // alpha: アルファ値、beta: ベータ値
@@ -173,12 +173,39 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
         tmp.reverse(move);
         tmp.pass();
         // 評価値を取得
-        int score = -search_node(tmp, depth - 1, -beta, -alpha);
+        int score = -search_node(tmp, cur_depth - 1, -beta, -alpha);
         // 暫定最善手がないまたはアルファ値より高いなら更新
         if(best_move == -1 || score > alpha) {
             alpha = score;
             best_move = move;
         }
+    }
+    // 選択した手を返す
+    return best_move;
+}
+
+// 手を選択
+int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_flag) {
+    // 探索開始時間を記録
+    double start = Timer::get_sec();
+    // 暫定最善手
+    int best_move = -1;
+    // 今の深さ
+    int cur_depth = min_depth;   
+    // 反復深化
+    while(true) {
+        // 手を取得
+        best_move = select_depth(board, legal, cur_depth);
+        // 現在の時間を記録
+        double cur_time = Timer::get_sec();
+        // 探索時間を計算
+        double search_time = cur_time - start;
+        // 最低探索時間を超えたなら終了
+        if(search_time > min_time) break;
+        // 探索深さが60なら終了
+        if(cur_depth == 60) break;
+        // 探索深さを1増やす
+        ++cur_depth;
     }
     // 出力
     if(print_flag) {
@@ -188,6 +215,8 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
         double search_time = end - start;
         // 毎秒ノード数を計算
         double nps = nodes / search_time;
+        // 探索深さ
+        std::cout << "Depth : " << cur_depth << '\n';
         // ノード数
         std::cout << "Nodes : " << nodes << '\n';
         // 時間
@@ -208,7 +237,7 @@ void Dacho2AIBeta::perft() {
     // 盤面を初期化
     Board board;
     // テスト
-    search_node(board, depth, -INF, INF);
+    search_node(board, min_depth, -INF, INF);
     // テスト終了時間を記録
     double end = Timer::get_sec();
     // 探索時間を計算
@@ -218,7 +247,7 @@ void Dacho2AIBeta::perft() {
     // テスト結果を出力
     std::cout << "=== Perft Test ===\n";
     // 深さ
-    std::cout << "Depth : " << depth << '\n';
+    std::cout << "Depth : " << min_depth << '\n';
     // ノード数
     std::cout << "Nodes : " << nodes << '\n';
     // 時間
