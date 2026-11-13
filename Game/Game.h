@@ -68,6 +68,8 @@ struct Game {
                 board.pass();
                 // 着手を出力
                 if(print_flag) std::cout << "Player " << (turn ? 1 : 2) << " placed " << pos_to_string(pos) << '\n';
+                // 手数を1増やす
+                ++ply;
             }
             // 自分が着手できない場合
             else {
@@ -83,8 +85,6 @@ struct Game {
             }
             // 手番交代
             turn = !turn;
-            // 手数を1増やす
-            ++ply;
             // 盤面を出力
             if(print_flag) print_board(board, turn);
         }

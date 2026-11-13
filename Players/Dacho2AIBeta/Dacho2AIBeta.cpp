@@ -22,21 +22,21 @@ int Dacho2AIBeta::eval_board(const Board& board) {
     int score = 0;
 
     // 1行目
-    score += weight_LUT1[player & 0xFF] - weight_LUT1[opponent & 0xFF];
+    score += WEIGHT_LUT1[player & 0xFF] - WEIGHT_LUT1[opponent & 0xFF];
     // 2行目
-    score += weight_LUT2[(player >> 8) & 0xFF] - weight_LUT2[(opponent >> 8) & 0xFF];
+    score += WEIGHT_LUT2[(player >> 8) & 0xFF] - WEIGHT_LUT2[(opponent >> 8) & 0xFF];
     // 3行目
-    score += weight_LUT3[(player >> 16) & 0xFF] - weight_LUT3[(opponent >> 16) & 0xFF];
+    score += WEIGHT_LUT3[(player >> 16) & 0xFF] - WEIGHT_LUT3[(opponent >> 16) & 0xFF];
     // 4行目
-    score += weight_LUT4[(player >> 24) & 0xFF] - weight_LUT4[(opponent >> 24) & 0xFF];
+    score += WEIGHT_LUT4[(player >> 24) & 0xFF] - WEIGHT_LUT4[(opponent >> 24) & 0xFF];
     // 5行目
-    score += weight_LUT4[(player >> 32) & 0xFF] - weight_LUT4[(opponent >> 32) & 0xFF];
+    score += WEIGHT_LUT4[(player >> 32) & 0xFF] - WEIGHT_LUT4[(opponent >> 32) & 0xFF];
     // 6行目
-    score += weight_LUT3[(player >> 40) & 0xFF] - weight_LUT3[(opponent >> 40) & 0xFF];
+    score += WEIGHT_LUT3[(player >> 40) & 0xFF] - WEIGHT_LUT3[(opponent >> 40) & 0xFF];
     // 7行目
-    score += weight_LUT2[(player >> 48) & 0xFF] - weight_LUT2[(opponent >> 48) & 0xFF];
+    score += WEIGHT_LUT2[(player >> 48) & 0xFF] - WEIGHT_LUT2[(opponent >> 48) & 0xFF];
     // 8行目
-    score += weight_LUT1[player >> 56] - weight_LUT1[opponent >> 56];
+    score += WEIGHT_LUT1[player >> 56] - WEIGHT_LUT1[opponent >> 56];
 
     // 評価値を返す
     return score;
@@ -69,7 +69,7 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
             return 0;
         }
         // 相手が着手できる場合はパスした盤面を探索
-        return -search_node(tmp, cur_depth - 1, -beta, -alpha);
+        return -search_node(tmp, cur_depth, -beta, -alpha);
     }
     // 残り深さが浅い場合はmove orderingをしない
     if(cur_depth <= 3) {

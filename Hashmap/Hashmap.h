@@ -1,4 +1,5 @@
 // Hashmap.h
+#pragma once
 #include <bits/stdc++.h>
 
 // ハッシュマップ
