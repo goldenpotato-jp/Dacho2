@@ -36,4 +36,8 @@ struct Hashmap {
     void insert(uint64_t key, uint64_t val);
     // アクセス
     uint64_t find(uint64_t key) const;
+    // 入れ替え
+    void swap(Hashmap& other);
+    // クリア
+    void clear();
 };

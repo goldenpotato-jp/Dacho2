@@ -43,7 +43,9 @@ int Dacho2AIBeta::eval_board(const Board& board) {
 }
 
 // move ordering用の評価
-int Dacho2AIBeta::eval_move_ordering(const Board& board) {  
+int Dacho2AIBeta::eval_move_ordering(const Board& board) {
+    uint64_t val = prev_transpose_table.find(board.hash());
+    if(val != Hashmap::NOT_FOUND) return CACHE_HIT_BONUS + val;
     return eval_board(board);
 }
 
@@ -51,8 +53,13 @@ int Dacho2AIBeta::eval_move_ordering(const Board& board) {
 int Dacho2AIBeta::nega_alpha(const Board& board, int depth, int alpha, int beta) {
     // ノード数を1増やす
     ++nodes;
-    // 葉ノードなので評価値を返す
+
+    // 葉ノードならば評価値を返す
     if(depth == 0) return eval_board(board);
+
+    // 置換表枝刈り
+    uint64_t hash = board.hash(), val = transpose_table.find(hash);
+    if(val != Hashmap::NOT_FOUND) return val;
 
     // 合法手を取得
     uint64_t legal = board.get_legal();
@@ -120,6 +127,7 @@ int Dacho2AIBeta::nega_alpha(const Board& board, int depth, int alpha, int beta)
     // move ordering
     if(move_count >= 2) std::sort(moves, moves + move_count);
     // move orderingでソートされた順番で探索
+    int max_score = -INF;
     for(int i = 0; i < move_count; ++i) {
         // 探索する手
         int move = moves[i] & 0xffff;
@@ -133,10 +141,15 @@ int Dacho2AIBeta::nega_alpha(const Board& board, int depth, int alpha, int beta)
         if(score >= beta) return beta;
         // アルファ値より高いなら更新
         if(score > alpha) alpha = score;
+        // 最大評価値より高いなら更新
+        if(score > max_score) max_score = score;
     }
     
-    // アルファ値を返す
-    return alpha;
+    // 置換表に登録
+    transpose_table.insert(hash, max_score);
+
+    // 最大評価値を返す
+    return max_score;
 }
 
 // 手を選択
@@ -145,12 +158,13 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
     double start = Timer::get_sec();
     // ノード数を初期化
     nodes = 0;
+    // 置換表を初期化
+    transpose_table.clear();
+    prev_transpose_table.clear();
     // 暫定最善手
     int best_move = -1;
     // 今の深さ
-    int cur_depth = min_depth;
-    // 合法手を取得
-    uint64_t legal = board.get_legal();
+    int depth = std::max(1, min_depth - 3);
 
     // 反復深化
     while(true) {
@@ -162,6 +176,8 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
         // オセロの合法手は最大で33個
         int moves[33];
 
+        // 合法手を取得
+        uint64_t legal = board.get_legal();
         // 合法手を探索
         while(legal) {
             // 合法手を取得
@@ -189,7 +205,7 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
             tmp.reverse(move);
             tmp.pass();
             // 評価値を取得
-            int score = -nega_alpha(tmp, cur_depth - 1, -beta, -alpha);
+            int score = -nega_alpha(tmp, depth - 1, -beta, -alpha);
             // 評価値がアルファ値より高いなら更新
             if(score > alpha) {
                 alpha = score;
@@ -201,12 +217,15 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
         double cur_time = Timer::get_sec();
         // 探索時間を計算
         double search_time = cur_time - start;
-        // 最低探索時間を超えたなら終了
-        if(search_time > min_time) break;
+        // 最低探索深さと最低探索時間を超えたなら終了
+        if(depth >= min_depth && search_time > min_time) break;
         // 探索深さが60なら終了
-        if(cur_depth == 60) break;
+        if(depth == 60) break;
         // 探索深さを1増やす
-        ++cur_depth;
+        ++depth;
+        // 置換表を入れ替える
+        transpose_table.swap(prev_transpose_table);
+        transpose_table.clear();
     }
 
     // 出力
@@ -218,7 +237,7 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
         // 毎秒ノード数を計算
         double nps = nodes / search_time;
         // 探索深さ
-        std::cout << "Depth : " << cur_depth << '\n';
+        std::cout << "Depth : " << depth << '\n';
         // ノード数
         std::cout << "Nodes : " << nodes << '\n';
         // 時間

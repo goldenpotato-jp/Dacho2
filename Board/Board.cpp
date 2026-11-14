@@ -321,3 +321,11 @@ uint64_t Board::perft_search(int depth) const {
     // ノード数を返す
     return nodes;
 }
+
+// ハッシュ
+uint64_t Board::hash() const {
+    uint64_t hash = player ^ (opponent * 0x9e3779b97f4a7c15ULL);
+    hash = (hash ^ (hash >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    hash = (hash ^ (hash >> 27)) * 0x94d049bb133111ebULL;
+    return hash ^ (hash >> 31);
+}

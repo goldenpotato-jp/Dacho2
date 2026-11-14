@@ -1,5 +1,6 @@
 // Dacho2AIBeta.h
 #include "../../Board/Board.h"
+#include "../../Hashmap/Hashmap.h"
 
 // Dacho2AIBeta
 struct Dacho2AIBeta {
@@ -19,7 +20,10 @@ struct Dacho2AIBeta {
     double min_time;
     // ノード数
     int nodes;
-    
+    // 置換表
+    Hashmap transpose_table;
+    Hashmap prev_transpose_table;
+
     // コンストラクタ
     Dacho2AIBeta(int min_depth, double min_time);
     // 盤面を評価
@@ -28,7 +32,7 @@ struct Dacho2AIBeta {
     static int eval_board(const Board& board);
     // move ordering用の評価
     // board: 相手番の盤面
-    static int eval_move_ordering(const Board& board);
+    int eval_move_ordering(const Board& board);
     // Negaalpha法
     // depth: このノードから探索する深さ、alpha: アルファ値、beta: ベータ値
     int nega_alpha(const Board& board, int depth, int alpha, int beta);

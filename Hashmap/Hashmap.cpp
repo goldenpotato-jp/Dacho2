@@ -44,6 +44,8 @@ void Hashmap::rehash(uint64_t new_cap) {
 
 // 再ハッシュせずに要素を挿入
 void Hashmap::insert_no_rehash(uint64_t key, uint64_t val) {
+    // 要素数を1増やす
+    ++num;
     // キーからインデックスを計算
     uint64_t idx = key & mask;
     // 空スロットが見つかるまでループ
@@ -81,4 +83,18 @@ uint64_t Hashmap::find(uint64_t key) const {
     }
     // 見つからないので無効値を返す
     return NOT_FOUND;
+}
+
+// 入れ替え
+void Hashmap::swap(Hashmap& other) {
+    std::swap(this -> cap, other.cap);
+    std::swap(this -> mask, other.mask);
+    std::swap(this -> num, other.num);
+    std::swap(this -> table, other.table);
+}
+
+// クリア
+void Hashmap::clear() {
+    num = 0;
+    std::fill(table, table + cap, Node{0ULL, 0ULL});
 }

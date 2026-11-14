@@ -32,4 +32,6 @@ struct Board {
     // Perftテスト用再帰関数
     // 返り値はノード数
     uint64_t perft_search(int depth) const;
+    // ハッシュ
+    uint64_t hash() const;
 };
