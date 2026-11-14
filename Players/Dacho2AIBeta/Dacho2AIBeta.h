@@ -27,18 +27,14 @@ struct Dacho2AIBeta {
     // 重みの出典：https://note.com/nyanyan_cubetech/n/n17c169271832?magazine_key=m54104c8d2f12
     static int eval_board(const Board& board);
     // move ordering用の評価
-    // 相手番の合法手の数
-    // 引数は相手番の盤面
+    // board: 相手番の盤面
     static int eval_move_ordering(const Board& board);
-    // Negaalpha法用の再帰関数
-    // cur_depth: このノードから探索する深さ
-    // alpha: アルファ値、beta: ベータ値
-    int search_node(const Board& board, int cur_depth, int alpha, int beta);
-    // 深さに基づいて探索する
-    int select_depth(const Board& board, uint64_t legal, int cur_depth);
+    // Negaalpha法
+    // depth: このノードから探索する深さ、alpha: アルファ値、beta: ベータ値
+    int nega_alpha(const Board& board, int depth, int alpha, int beta);
     // 手を選択
-    int select_move(const Board& board, uint64_t legal, bool print_flag);
+    int select_move(const Board& board, bool print_flag);
     // テスト
-    // 深さはdepth
+    // 深さはmin_depth
     void test();
 };

@@ -10,5 +10,5 @@ struct Human {
     // 返り値は左上を0として0~63
     static int string_to_pos(std::string s);
     // 手を選択
-    static int select_move(const Board& board, uint64_t legal, bool print_flag);
+    static int select_move(const Board& board, bool print_flag);
 };

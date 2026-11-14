@@ -60,9 +60,9 @@ struct Game {
                 // プレイヤーの手を取得
                 int pos = -1;
                 // 先手番
-                if(turn) pos = player1.select_move(board, legal, print_flag);
+                if(turn) pos = player1.select_move(board, print_flag);
                 // 後手番
-                else pos = player2.select_move(board, legal, print_flag);
+                else pos = player2.select_move(board, print_flag);
                 // 着手
                 board.reverse(pos);
                 board.pass();

@@ -9,7 +9,9 @@ int Human::string_to_pos(std::string s) {
 };
 
 // 手を選択
-int Human::select_move(const Board& board, uint64_t legal, bool print_flag) {
+int Human::select_move(const Board& board, bool print_flag) {
+    // 合法手を取得
+    uint64_t legal = board.get_legal();
     // 合法手を入力するまで繰り返す
     while(true) {
         // 入力を促す

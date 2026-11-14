@@ -44,15 +44,16 @@ int Dacho2AIBeta::eval_board(const Board& board) {
 
 // move ordering用の評価
 int Dacho2AIBeta::eval_move_ordering(const Board& board) {  
-    return __builtin_popcountll(board.get_legal());
+    return eval_board(board);
 }
 
-// Negaalpha法用の再帰関数
-int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int beta) {
+// Negaalpha法
+int Dacho2AIBeta::nega_alpha(const Board& board, int depth, int alpha, int beta) {
     // ノード数を1増やす
     ++nodes;
     // 葉ノードなので評価値を返す
-    if(cur_depth == 0) return eval_board(board);
+    if(depth == 0) return eval_board(board);
+
     // 合法手を取得
     uint64_t legal = board.get_legal();
     // 自分が着手できない場合
@@ -69,10 +70,11 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
             return 0;
         }
         // 相手が着手できる場合はパスした盤面を探索
-        return -search_node(tmp, cur_depth, -beta, -alpha);
+        return -nega_alpha(tmp, depth, -beta, -alpha);
     }
+
     // 残り深さが浅い場合はmove orderingをしない
-    if(cur_depth <= 3) {
+    if(depth <= 3) {
         // 合法手を探索
         while(legal) {
             // 合法手を取得
@@ -82,7 +84,7 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
             tmp.reverse(move);
             tmp.pass();
             // 評価値を取得
-            int score = -search_node(tmp, cur_depth - 1, -beta, -alpha);
+            int score = -nega_alpha(tmp, depth - 1, -beta, -alpha);
             // ベータ値以上なら枝刈り
             if(score >= beta) return beta;
             // アルファ値より高いなら更新
@@ -93,6 +95,7 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
         // アルファ値を返す
         return alpha;
     }
+
     // 合法手の数
     int move_count = 0;
     // 合法手の配列
@@ -113,8 +116,9 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
         // legalの最下位ビットを消去
         legal &= legal - 1ULL;
     }
+
     // move ordering
-    std::sort(moves, moves + move_count);
+    if(move_count >= 2) std::sort(moves, moves + move_count);
     // move orderingでソートされた順番で探索
     for(int i = 0; i < move_count; ++i) {
         // 探索する手
@@ -124,78 +128,75 @@ int Dacho2AIBeta::search_node(const Board& board, int cur_depth, int alpha, int 
         tmp.reverse(move);
         tmp.pass();
         // 評価値を取得
-        int score = -search_node(tmp, cur_depth - 1, -beta, -alpha);
+        int score = -nega_alpha(tmp, depth - 1, -beta, -alpha);
         // ベータ値以上なら枝刈り
         if(score >= beta) return beta;
         // アルファ値より高いなら更新
         if(score > alpha) alpha = score;
     }
+    
     // アルファ値を返す
     return alpha;
 }
 
-// 深さに基づいて探索する
-int Dacho2AIBeta::select_depth(const Board& board, uint64_t legal, int cur_depth) {
-    // ノード数をリセット
-    nodes = 0;
-    // alpha: アルファ値、beta: ベータ値
-    int alpha = -INF, beta = INF;
-    // best_move: 暫定最善手
-    int best_move = -1;
-    // 合法手の数
-    int move_count = 0;
-    // 合法手の配列
-    // オセロの合法手は最大で33個
-    int moves[33];
-    // 合法手を探索
-    while(legal) {
-        // 合法手を取得
-        int move = __builtin_ctzll(legal);
-        // 着手
-        Board tmp = board;
-        tmp.reverse(move);
-        tmp.pass();
-        // move ordering用の評価値を取得
-        int score = eval_move_ordering(tmp);
-        // 合法手に追加
-        moves[move_count++] = score << 16 | move;
-        // legalの最下位ビットを消去
-        legal &= legal - 1ULL;
-    }
-    // move ordering
-    std::sort(moves, moves + move_count);
-    // move orderingでソートされた順番で探索
-    for(int i = 0; i < move_count; ++i) {
-        // 探索する手
-        int move = moves[i] & 0xffff;
-        // 着手
-        Board tmp = board;
-        tmp.reverse(move);
-        tmp.pass();
-        // 評価値を取得
-        int score = -search_node(tmp, cur_depth - 1, -beta, -alpha);
-        // 暫定最善手がないまたはアルファ値より高いなら更新
-        if(best_move == -1 || score > alpha) {
-            alpha = score;
-            best_move = move;
-        }
-    }
-    // 選択した手を返す
-    return best_move;
-}
-
 // 手を選択
-int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_flag) {
+int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
     // 探索開始時間を記録
     double start = Timer::get_sec();
+    // ノード数を初期化
+    nodes = 0;
     // 暫定最善手
     int best_move = -1;
     // 今の深さ
-    int cur_depth = min_depth;   
+    int cur_depth = min_depth;
+    // 合法手を取得
+    uint64_t legal = board.get_legal();
+
     // 反復深化
     while(true) {
-        // 手を取得
-        best_move = select_depth(board, legal, cur_depth);
+        // alpha: アルファ値、beta: ベータ値
+        int alpha = -INF, beta = INF;
+        // 合法手の数
+        int move_count = 0;
+        // 合法手の配列
+        // オセロの合法手は最大で33個
+        int moves[33];
+
+        // 合法手を探索
+        while(legal) {
+            // 合法手を取得
+            int move = __builtin_ctzll(legal);
+            // 着手
+            Board tmp = board;
+            tmp.reverse(move);
+            tmp.pass();
+            // move ordering用の評価値を取得
+            int score = eval_move_ordering(tmp);
+            // 合法手に追加
+            moves[move_count++] = score << 16 | move;
+            // legalの最下位ビットを消去
+            legal &= legal - 1ULL;
+        }
+
+        // move ordering
+        std::sort(moves, moves + move_count);
+        // move orderingでソートされた順番で探索
+        for(int i = 0; i < move_count; ++i) {
+            // 探索する手
+            int move = moves[i] & 0xffff;
+            // 着手
+            Board tmp = board;
+            tmp.reverse(move);
+            tmp.pass();
+            // 評価値を取得
+            int score = -nega_alpha(tmp, cur_depth - 1, -beta, -alpha);
+            // 評価値がアルファ値より高いなら更新
+            if(score > alpha) {
+                alpha = score;
+                best_move = move;
+            }
+        }
+
         // 現在の時間を記録
         double cur_time = Timer::get_sec();
         // 探索時間を計算
@@ -207,6 +208,7 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
         // 探索深さを1増やす
         ++cur_depth;
     }
+
     // 出力
     if(print_flag) {
         // 探索終了時間を記録
@@ -232,12 +234,10 @@ int Dacho2AIBeta::select_move(const Board& board, uint64_t legal, bool print_fla
 void Dacho2AIBeta::test() {
     // テスト開始時間を記録
     double start = Timer::get_sec();
-    // ノード数をリセット
+    // ノード数を初期化
     nodes = 0;
-    // 盤面を初期化
-    Board board;
     // テスト
-    search_node(board, min_depth, -INF, INF);
+    int score = nega_alpha(Board(), min_depth, -INF, INF);
     // テスト終了時間を記録
     double end = Timer::get_sec();
     // 探索時間を計算
@@ -254,4 +254,6 @@ void Dacho2AIBeta::test() {
     std::cout << "Time : " << search_time << " s\n";
     // 毎秒ノード数
     std::cout << "NPS : " << nps << " nps\n";
+    // 評価値
+    std::cout << "Score: " << score << '\n';
 }

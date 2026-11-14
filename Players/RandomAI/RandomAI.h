@@ -5,5 +5,5 @@
 // ランダムAI
 struct RandomAI {
     // 手を選択
-    static int select_move(const Board& board, uint64_t legal, bool print_flag);
+    static int select_move(const Board& board, bool print_flag);
 };
