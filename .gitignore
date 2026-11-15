@@ -3,3 +3,4 @@
 *.o
 dacho2
 main.cpp
+train_data

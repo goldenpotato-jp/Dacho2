@@ -11,6 +11,12 @@ Board::Board():
     // 白石の初期盤面
     opponent(0x0000001008000000ULL) {}
 
+Board::Board(uint64_t player, uint64_t opponent):
+    // 自分の石を初期化
+    player(player),
+    // 自分の石を初期化
+    opponent(opponent) {}
+
 
 // 合法手
 uint64_t Board::get_legal() const {

@@ -12,6 +12,7 @@ struct Board {
     
     // コンストラクタ
     Board();
+    Board(uint64_t player, uint64_t opponent);
     // 合法手
     uint64_t get_legal() const;
     // 着手

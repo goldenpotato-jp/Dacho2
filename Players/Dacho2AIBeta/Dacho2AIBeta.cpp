@@ -42,6 +42,23 @@ int Dacho2AIBeta::eval_board(const Board& board) {
     return score;
 }
 
+// 学習
+void Dacho2AIBeta::learn() {
+    // 学習データを読み込む
+    std::cout << "Load train data\n";
+    std::ifstream train_data_file("train_data/0000000.txt");
+    // 読み込み失敗
+    if(!train_data_file.is_open()) {
+        std::cout << "Error: fail to load\n";
+        return;
+    }
+    std::string line;
+    for(int i = 0; i < 10; ++i) {
+        std::getline(train_data_file, line);
+        std::cout << line << '\n';
+    }
+}
+
 // move ordering用の評価
 int Dacho2AIBeta::eval_move_ordering(const Board& board) {
     uint64_t val = prev_transpose_table.find(board.hash());
@@ -162,7 +179,7 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
     transpose_table.clear();
     prev_transpose_table.clear();
     // 暫定最善手
-    int best_move = -1;
+    int best_move = -1, board_score;
     // 今の深さ
     int depth = std::max(1, min_depth - 3);
 
@@ -213,6 +230,8 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
             }
         }
 
+        // 評価値を記録
+        board_score = alpha;
         // 現在の時間を記録
         double cur_time = Timer::get_sec();
         // 探索時間を計算
@@ -244,13 +263,72 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
         std::cout << "Time : " << search_time << " s\n";
         // 毎秒ノード数
         std::cout << "NPS : " << nps << " nps\n";
+        // 評価値
+        std::cout << "Score: " << board_score << '\n';
     }
     // 選択した手を返す
     return best_move;
 }
 
-// テスト
-void Dacho2AIBeta::test() {
+// 評価テスト
+void Dacho2AIBeta::test_eval(int test_num) {
+    // テスト開始時間を記録
+    double start = Timer::get_sec();
+
+    // 学習データを読み込む
+    std::cout << "Load train data\n";
+    std::ifstream train_data_file("train_data/0000000.txt");
+    // 読み込み失敗
+    if(!train_data_file.is_open()) {
+        std::cout << "Error: fail to load\n";
+        return;
+    }
+
+    // 評価関数をテスト
+    double loss_sum = 0;
+    for(int i = 0; i < test_num; ++i) {
+        // 盤面に変換
+        std::string line;
+        std::getline(train_data_file, line);
+        uint64_t player = 0, opponent = 0;
+        for(int j = 0; j < 64; ++j) {
+            if(line[j] == 'X') player |= 1ULL << j;
+            else if(line[j] == 'O') opponent |= 1ULL << j;
+        }
+        Board board(player, opponent);
+        // 評価値を取得
+        int eval_score = eval_board(board);
+        // 答えを取得
+        int answer_score = std::stoi(line.substr(65)) * 256;
+        // 損失を計算
+        int loss = std::abs(eval_score - answer_score);
+        // 損失を加算
+        loss_sum += loss;
+    }
+
+    // テスト終了時間を記録
+    double end = Timer::get_sec();
+    // テスト時間を計算
+    double test_time = end - start;
+    // 毎秒テスト数を計算
+    double tps = test_num / test_time;
+    // 平均損失を計算
+    double loss_avg = loss_sum / test_num;
+    
+    // テスト結果を出力
+    std::cout << "=== Eval Test ===\n";
+    // テスト数
+    std::cout << "Test num : " << test_num << '\n';
+    // 時間
+    std::cout << "Time : " << test_time << " s\n";
+    // 毎秒テスト数
+    std::cout << "TPS : " << tps << " tps\n";
+    // 平均損失
+    std::cout << "Loss avg: " << loss_avg << '\n';
+}
+
+// 探索テスト
+void Dacho2AIBeta::test_search() {
     // テスト開始時間を記録
     double start = Timer::get_sec();
     // ノード数を初期化
@@ -263,8 +341,9 @@ void Dacho2AIBeta::test() {
     double search_time = end - start;
     // 毎秒ノード数を計算
     double nps = nodes / search_time;
+
     // テスト結果を出力
-    std::cout << "=== Test ===\n";
+    std::cout << "=== Search Test ===\n";
     // 深さ
     std::cout << "Depth : " << min_depth << '\n';
     // ノード数

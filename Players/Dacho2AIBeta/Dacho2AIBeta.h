@@ -30,6 +30,8 @@ struct Dacho2AIBeta {
     // マスごとにつけた重みを前計算したLUTで計算
     // 重みの出典：https://note.com/nyanyan_cubetech/n/n17c169271832?magazine_key=m54104c8d2f12
     static int eval_board(const Board& board);
+    // 学習
+    static void learn();
     // move ordering用の評価
     // board: 相手番の盤面
     int eval_move_ordering(const Board& board);
@@ -38,7 +40,9 @@ struct Dacho2AIBeta {
     int nega_alpha(const Board& board, int depth, int alpha, int beta);
     // 手を選択
     int select_move(const Board& board, bool print_flag);
-    // テスト
-    // 深さはmin_depth
-    void test();
+    // 評価テスト
+    static void test_eval(int test_num);
+    // 探索テスト
+    // 深さはmin_depth 
+    void test_search();
 };
