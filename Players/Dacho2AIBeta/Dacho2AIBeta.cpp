@@ -1,9 +1,51 @@
 // Dacho2AIBeta.cpp
 #include "Dacho2AIBeta.h"
-#include "../../Const/const.h"
 #include "../../Timer/Timer.h"
 
 // Dacho2AIBeta
+
+// 学習データ
+std::string Dacho2AIBeta::train_data_path[TRAIN_FILE_NUM] = {
+    "train_data/0000000.txt",
+    "train_data/0000001.txt",
+    "train_data/0000002.txt",
+    "train_data/0000003.txt",
+    "train_data/0000004.txt",
+    "train_data/0000005.txt",
+    "train_data/0000006.txt",
+    "train_data/0000007.txt",
+    "train_data/0000008.txt",
+    "train_data/0000009.txt",
+    "train_data/0000010.txt",
+    "train_data/0000011.txt",
+    "train_data/0000012.txt",
+    "train_data/0000013.txt",
+    "train_data/0000014.txt",
+    "train_data/0000015.txt",
+    "train_data/0000016.txt",
+    "train_data/0000017.txt",
+    "train_data/0000018.txt",
+    "train_data/0000019.txt",
+    "train_data/0000020.txt",
+    "train_data/0000021.txt",
+    "train_data/0000022.txt",
+    "train_data/0000023.txt",
+    "train_data/0000024.txt",
+};
+Board Dacho2AIBeta::train_data_board[25000000];
+int Dacho2AIBeta::train_data_answer[25000000];
+
+// 重み
+// 辺+2Xの重み
+double Dacho2AIBeta::weight_edge[59049];
+// 2行目の重み
+double Dacho2AIBeta::weight_line1[6561];
+// 3行目の重み
+double Dacho2AIBeta::weight_line2[6561];
+// 4行目の重み
+double Dacho2AIBeta::weight_line3[6561];
+// 斜めの重み
+double Dacho2AIBeta::weight_diagonal[59049];
 
 // コンストラクタ
 Dacho2AIBeta::Dacho2AIBeta(int min_depth, double min_time):
@@ -12,50 +54,217 @@ Dacho2AIBeta::Dacho2AIBeta(int min_depth, double min_time):
     // 最低探索時間
     min_time(min_time) {}
 
+// 重みを読み込む
+void Dacho2AIBeta::load_weight() {
+    // ファイル入力
+    std::cout << "Load weight\n";
+    // 辺+2Xの重み
+    std::ifstream weight_edge_file("Players/Dacho2AIBeta/weight/weight_edge.txt");
+    // 2行目の重み
+    std::ifstream weight_line1_file("Players/Dacho2AIBeta/weight/weight_line1.txt");
+    // 3行目の重み
+    std::ifstream weight_line2_file("Players/Dacho2AIBeta/weight/weight_line2.txt");
+    // 4行目の重み
+    std::ifstream weight_line3_file("Players/Dacho2AIBeta/weight/weight_line3.txt");
+    // 斜めの重み
+    std::ifstream weight_diagonal_file("Players/Dacho2AIBeta/weight/weight_diagonal.txt");
+    // 読み込み失敗
+    if(!weight_edge_file.is_open() || !weight_line1_file.is_open() || !weight_line2_file.is_open() || !weight_line3_file.is_open() || !weight_diagonal_file.is_open()) {
+        std::cout << "Error: fail to save\n";
+        return;
+    }
+    // 重みを読み込む
+    std::string line;
+    // 辺+2Xの重み
+    for(int i = 0; i < 59049; ++i) {
+        std::getline(weight_edge_file, line);
+        weight_edge[i] = stod(line);
+    }
+    // 2行目の重み
+    for(int i = 0; i < 6561; ++i) {
+        std::getline(weight_line1_file, line);
+        weight_line1[i] = stod(line);
+    }
+    // 3行目の重み
+    for(int i = 0; i < 6561; ++i) {
+        std::getline(weight_line2_file, line);
+        weight_line2[i] = stod(line);
+    }
+    // 4行目の重み
+    for(int i = 0; i < 6561; ++i) {
+        std::getline(weight_line3_file, line);
+        weight_line3[i] = stod(line);
+    }
+    // 斜めの重み
+    for(int i = 0; i < 59049; ++i) {
+        std::getline(weight_diagonal_file, line);
+        weight_diagonal[i] = stod(line);
+    }
+    // 読み込み成功
+    std::cout << "Load successful\n";
+}
+
+// 重みを保存
+void Dacho2AIBeta::save_weight() {
+    // ファイル出力
+    std::cout << "Save weight\n";
+    // 辺+2Xの重み
+    std::ofstream weight_edge_file("Players/Dacho2AIBeta/weight/weight_edge.txt");
+    // 2行目の重み
+    std::ofstream weight_line1_file("Players/Dacho2AIBeta/weight/weight_line1.txt");
+    // 3行目の重み
+    std::ofstream weight_line2_file("Players/Dacho2AIBeta/weight/weight_line2.txt");
+    // 4行目の重み
+    std::ofstream weight_line3_file("Players/Dacho2AIBeta/weight/weight_line3.txt");
+    // 斜めの重み
+    std::ofstream weight_diagonal_file("Players/Dacho2AIBeta/weight/weight_diagonal.txt");
+    // 読み込み失敗
+    if(!weight_edge_file.is_open() || !weight_line1_file.is_open() || !weight_line2_file.is_open() || !weight_line3_file.is_open() || !weight_diagonal_file.is_open()) {
+        std::cout << "Error: fail to save\n";
+        return;
+    }
+    // 辺+2Xの重み
+    for(int i = 0; i < 59049; ++i) weight_edge_file << weight_edge[i] << '\n';
+    // 2行目の重み
+    for(int i = 0; i < 6561; ++i) weight_line1_file << weight_line1[i] << '\n';
+    // 3行目の重み
+    for(int i = 0; i < 6561; ++i) weight_line2_file << weight_line2[i] << '\n';
+    // 4行目の重み
+    for(int i = 0; i < 6561; ++i) weight_line3_file << weight_line3[i] << '\n';
+    // 斜めの重み
+    for(int i = 0; i < 59049; ++i) weight_diagonal_file << weight_diagonal[i] << '\n';
+    // 保存完了
+    std::cout << "Save successful\n";
+}
+
+// 学習データを読み込む
+void Dacho2AIBeta::load_train_data() {
+    std::cout << "Load train data\n";
+    int idx = 0;
+    std::string line;
+    for(int i = 0; i < TRAIN_FILE_NUM; ++i){
+        std::ifstream train_data_file(train_data_path[i]);
+        // 読み込み失敗
+        if(!train_data_file.is_open()) {
+            std::cout << "Error: fail to load\n";
+            return;
+        }
+        // 学習データを読み込む
+        for(int j = 0; j < TRAIN_DATA_SIZE; ++j) {
+            std::getline(train_data_file, line);
+            // 盤面に変換
+            uint64_t player = 0, opponent = 0;
+            for(int j = 0; j < 64; ++j) {
+                if(line[j] == 'X') player |= 1ULL << j;
+                else if(line[j] == 'O') opponent |= 1ULL << j;
+            }
+            train_data_board[idx] = Board(player, opponent);
+            // 答えを取得
+            train_data_answer[idx] = std::stoi(line.substr(65));
+            ++idx;
+        }
+    }
+    // 読み込み完了
+    std::cout << "Load successful\n";
+}
+
 // 盤面を評価
-int Dacho2AIBeta::eval_board(const Board& board) {
+double Dacho2AIBeta::eval_board(const Board& board) {
     // 自分の石
     uint64_t player = board.player;
     // 相手の石
     uint64_t opponent = board.opponent;
     // 評価値
-    int score = 0;
+    double score = 0;
 
-    // 1行目
-    score += WEIGHT_LUT1[player & 0xFF] - WEIGHT_LUT1[opponent & 0xFF];
-    // 2行目
-    score += WEIGHT_LUT2[(player >> 8) & 0xFF] - WEIGHT_LUT2[(opponent >> 8) & 0xFF];
-    // 3行目
-    score += WEIGHT_LUT3[(player >> 16) & 0xFF] - WEIGHT_LUT3[(opponent >> 16) & 0xFF];
-    // 4行目
-    score += WEIGHT_LUT4[(player >> 24) & 0xFF] - WEIGHT_LUT4[(opponent >> 24) & 0xFF];
-    // 5行目
-    score += WEIGHT_LUT4[(player >> 32) & 0xFF] - WEIGHT_LUT4[(opponent >> 32) & 0xFF];
-    // 6行目
-    score += WEIGHT_LUT3[(player >> 40) & 0xFF] - WEIGHT_LUT3[(opponent >> 40) & 0xFF];
-    // 7行目
-    score += WEIGHT_LUT2[(player >> 48) & 0xFF] - WEIGHT_LUT2[(opponent >> 48) & 0xFF];
-    // 8行目
-    score += WEIGHT_LUT1[player >> 56] - WEIGHT_LUT1[opponent >> 56];
+    // 辺+2Xの重み（上）
+    score += weight_edge[BASE_2_TO_3[(player & 0xff) | (player >> 1 & 0x100) | (player >> 5 & 0x200)] + (BASE_2_TO_3[(opponent & 0xff) | (opponent >> 1 & 0x100) | (opponent >> 5 & 0x200)] << 1)];
+    // 辺+2Xの重み（下）
+    score += weight_edge[BASE_2_TO_3[(player >> 56) | (player >> 41 & 0x100) | (player >> 45 & 0x200)] + (BASE_2_TO_3[(opponent >> 56) | (opponent >> 41 & 0x100) | (opponent >> 45 & 0x200)] << 1)];
+    // 2行目の重み
+    score += weight_line1[BASE_2_TO_3[player >> 8 & 0xff] + (BASE_2_TO_3[opponent >> 8 & 0xff] << 1)];
+    // 3行目の重み
+    score += weight_line2[BASE_2_TO_3[player >> 16 & 0xff] + (BASE_2_TO_3[opponent >> 16 & 0xff] << 1)];
+    // 4行目の重み
+    score += weight_line3[BASE_2_TO_3[player >> 24 & 0xff] + (BASE_2_TO_3[opponent >> 24 & 0xff] << 1)];
+    // 5行目の重み
+    score += weight_line3[BASE_2_TO_3[player >> 32 & 0xff] + (BASE_2_TO_3[opponent >> 32 & 0xff] << 1)];
+    // 6行目の重み
+    score += weight_line2[BASE_2_TO_3[player >> 40 & 0xff] + (BASE_2_TO_3[opponent >> 40 & 0xff] << 1)];
+    // 7行目の重み
+    score += weight_line1[BASE_2_TO_3[player >> 48 & 0xff] + (BASE_2_TO_3[opponent >> 48 & 0xff] << 1)];
+    // 対角線反転
+    player = Board::transpose(player);
+    opponent = Board::transpose(opponent);
+    // 辺+2Xの重み（左）
+    score += weight_edge[BASE_2_TO_3[(player & 0xff) | (player >> 1 & 0x100) | (player >> 5 & 0x200)] + (BASE_2_TO_3[(opponent & 0xff) | (opponent >> 1 & 0x100) | (opponent >> 5 & 0x200)] << 1)];
+    // 辺+2Xの重み（右）
+    score += weight_edge[BASE_2_TO_3[(player >> 56) | (player >> 41 & 0x100) | (player >> 45 & 0x200)] + (BASE_2_TO_3[(opponent >> 56) | (opponent >> 41 & 0x100) | (opponent >> 45 & 0x200)] << 1)];
+    // 2列目の重み
+    score += weight_line1[BASE_2_TO_3[player >> 8 & 0xff] + (BASE_2_TO_3[opponent >> 8 & 0xff] << 1)];
+    // 3列目の重み
+    score += weight_line2[BASE_2_TO_3[player >> 16 & 0xff] + (BASE_2_TO_3[opponent >> 16 & 0xff] << 1)];
+    // 4列目の重み
+    score += weight_line3[BASE_2_TO_3[player >> 24 & 0xff] + (BASE_2_TO_3[opponent >> 24 & 0xff] << 1)];
+    // 5列目の重み
+    score += weight_line3[BASE_2_TO_3[player >> 32 & 0xff] + (BASE_2_TO_3[opponent >> 32 & 0xff] << 1)];
+    // 6列目の重み
+    score += weight_line2[BASE_2_TO_3[player >> 40 & 0xff] + (BASE_2_TO_3[opponent >> 40 & 0xff] << 1)];
+    // 7列目の重み
+    score += weight_line1[BASE_2_TO_3[player >> 48 & 0xff] + (BASE_2_TO_3[opponent >> 48 & 0xff] << 1)];
 
     // 評価値を返す
     return score;
 }
 
 // 学習
-void Dacho2AIBeta::learn() {
-    // 学習データを読み込む
-    std::cout << "Load train data\n";
-    std::ifstream train_data_file("train_data/0000000.txt");
-    // 読み込み失敗
-    if(!train_data_file.is_open()) {
-        std::cout << "Error: fail to load\n";
-        return;
-    }
-    std::string line;
-    for(int i = 0; i < 10; ++i) {
-        std::getline(train_data_file, line);
-        std::cout << line << '\n';
+void Dacho2AIBeta::learn(int idx_start, int idx_end, double learning_rate) {
+    // 学習
+    for(int i = idx_start; i < idx_end; ++i) {
+        // 盤面を取得
+        uint64_t player = train_data_board[i].player, opponent = train_data_board[i].opponent;
+        // 評価値を取得
+        double eval_score = eval_board(train_data_board[i]);
+        // 答えを取得
+        int answer_score = train_data_answer[i];
+        // 勾配を計算
+        double gradient = (eval_score - answer_score) * learning_rate;
+
+        // 辺+2Xの重み（上）
+        weight_edge[BASE_2_TO_3[(player & 0xff) | (player >> 1 & 0x100) | (player >> 5 & 0x200)] + (BASE_2_TO_3[(opponent & 0xff) | (opponent >> 1 & 0x100) | (opponent >> 5 & 0x200)] << 1)] -= gradient;
+        // 辺+2Xの重み（下）
+        weight_edge[BASE_2_TO_3[(player >> 56) | (player >> 41 & 0x100) | (player >> 45 & 0x200)] + (BASE_2_TO_3[(opponent >> 56) | (opponent >> 41 & 0x100) | (opponent >> 45 & 0x200)] << 1)] -= gradient;
+        // 2行目の重み
+        weight_line1[BASE_2_TO_3[player >> 8 & 0xff] + (BASE_2_TO_3[opponent >> 8 & 0xff] << 1)] -= gradient;
+        // 3行目の重み
+        weight_line2[BASE_2_TO_3[player >> 16 & 0xff] + (BASE_2_TO_3[opponent >> 16 & 0xff] << 1)] -= gradient;
+        // 4行目の重み
+        weight_line3[BASE_2_TO_3[player >> 24 & 0xff] + (BASE_2_TO_3[opponent >> 24 & 0xff] << 1)] -= gradient;
+        // 5行目の重み
+        weight_line3[BASE_2_TO_3[player >> 32 & 0xff] + (BASE_2_TO_3[opponent >> 32 & 0xff] << 1)] -= gradient;
+        // 6行目の重み
+        weight_line2[BASE_2_TO_3[player >> 40 & 0xff] + (BASE_2_TO_3[opponent >> 40 & 0xff] << 1)] -= gradient;
+        // 7行目の重み
+        weight_line1[BASE_2_TO_3[player >> 48 & 0xff] + (BASE_2_TO_3[opponent >> 48 & 0xff] << 1)] -= gradient;
+        // 対角線反転
+        player = Board::transpose(player);
+        opponent = Board::transpose(opponent);
+        // 辺+2Xの重み（左）
+        weight_edge[BASE_2_TO_3[(player & 0xff) | (player >> 1 & 0x100) | (player >> 5 & 0x200)] + (BASE_2_TO_3[(opponent & 0xff) | (opponent >> 1 & 0x100) | (opponent >> 5 & 0x200)] << 1)] -= gradient;
+        // 辺+2Xの重み（右）
+        weight_edge[BASE_2_TO_3[(player >> 56) | (player >> 41 & 0x100) | (player >> 45 & 0x200)] + (BASE_2_TO_3[(opponent >> 56) | (opponent >> 41 & 0x100) | (opponent >> 45 & 0x200)] << 1)] -= gradient;
+        // 2列目の重み
+        weight_line1[BASE_2_TO_3[player >> 8 & 0xff] + (BASE_2_TO_3[opponent >> 8 & 0xff] << 1)] -= gradient;
+        // 3列目の重み
+        weight_line2[BASE_2_TO_3[player >> 16 & 0xff] + (BASE_2_TO_3[opponent >> 16 & 0xff] << 1)] -= gradient;
+        // 4列目の重み
+        weight_line3[BASE_2_TO_3[player >> 24 & 0xff] + (BASE_2_TO_3[opponent >> 24 & 0xff] << 1)] -= gradient;
+        // 5列目の重み
+        weight_line3[BASE_2_TO_3[player >> 32 & 0xff] + (BASE_2_TO_3[opponent >> 32 & 0xff] << 1)] -= gradient;
+        // 6列目の重み
+        weight_line2[BASE_2_TO_3[player >> 40 & 0xff] + (BASE_2_TO_3[opponent >> 40 & 0xff] << 1)] -= gradient;
+        // 7列目の重み
+        weight_line1[BASE_2_TO_3[player >> 48 & 0xff] + (BASE_2_TO_3[opponent >> 48 & 0xff] << 1)] -= gradient;
     }
 }
 
@@ -64,6 +273,47 @@ int Dacho2AIBeta::eval_move_ordering(const Board& board) {
     uint64_t val = prev_transpose_table.find(board.hash());
     if(val != Hashmap::NOT_FOUND) return CACHE_HIT_BONUS + val;
     return eval_board(board);
+}
+
+// 評価テスト
+void Dacho2AIBeta::test_eval(int idx_start, int idx_end) {
+    // テスト開始時間を記録
+    double start = Timer::get_sec();
+
+    // 評価関数をテスト
+    double loss_sum = 0;
+    for(int i = idx_start; i < idx_end; ++i) {
+        // 評価値を取得
+        int eval_score = eval_board(train_data_board[i]);
+        // 答えを取得
+        int answer_score = train_data_answer[i];
+        // 損失を計算
+        int loss = (eval_score - answer_score) * (eval_score - answer_score);
+        // 損失を加算
+        loss_sum += loss;
+    }
+
+    // テスト終了時間を記録
+    double end = Timer::get_sec();
+    // テスト時間を計算
+    double test_time = end - start;
+    // テスト数を計算
+    int test_num = idx_end - idx_start;
+    // 毎秒テスト数を計算
+    double tps = test_num / test_time;
+    // 平均損失を計算
+    double loss_avg = loss_sum / test_num;
+    
+    // テスト結果を出力
+    std::cout << "=== Eval Test ===\n";
+    // テスト数
+    std::cout << "Test num : " << test_num << '\n';
+    // 時間
+    std::cout << "Time : " << test_time << " s\n";
+    // 毎秒テスト数
+    std::cout << "TPS : " << tps << " tps\n";
+    // 平均損失
+    std::cout << "Loss avg: " << loss_avg << '\n';
 }
 
 // Negaalpha法
@@ -268,63 +518,6 @@ int Dacho2AIBeta::select_move(const Board& board, bool print_flag) {
     }
     // 選択した手を返す
     return best_move;
-}
-
-// 評価テスト
-void Dacho2AIBeta::test_eval(int test_num) {
-    // テスト開始時間を記録
-    double start = Timer::get_sec();
-
-    // 学習データを読み込む
-    std::cout << "Load train data\n";
-    std::ifstream train_data_file("train_data/0000000.txt");
-    // 読み込み失敗
-    if(!train_data_file.is_open()) {
-        std::cout << "Error: fail to load\n";
-        return;
-    }
-
-    // 評価関数をテスト
-    double loss_sum = 0;
-    for(int i = 0; i < test_num; ++i) {
-        // 盤面に変換
-        std::string line;
-        std::getline(train_data_file, line);
-        uint64_t player = 0, opponent = 0;
-        for(int j = 0; j < 64; ++j) {
-            if(line[j] == 'X') player |= 1ULL << j;
-            else if(line[j] == 'O') opponent |= 1ULL << j;
-        }
-        Board board(player, opponent);
-        // 評価値を取得
-        int eval_score = eval_board(board);
-        // 答えを取得
-        int answer_score = std::stoi(line.substr(65)) * 256;
-        // 損失を計算
-        int loss = std::abs(eval_score - answer_score);
-        // 損失を加算
-        loss_sum += loss;
-    }
-
-    // テスト終了時間を記録
-    double end = Timer::get_sec();
-    // テスト時間を計算
-    double test_time = end - start;
-    // 毎秒テスト数を計算
-    double tps = test_num / test_time;
-    // 平均損失を計算
-    double loss_avg = loss_sum / test_num;
-    
-    // テスト結果を出力
-    std::cout << "=== Eval Test ===\n";
-    // テスト数
-    std::cout << "Test num : " << test_num << '\n';
-    // 時間
-    std::cout << "Time : " << test_time << " s\n";
-    // 毎秒テスト数
-    std::cout << "TPS : " << tps << " tps\n";
-    // 平均損失
-    std::cout << "Loss avg: " << loss_avg << '\n';
 }
 
 // 探索テスト

@@ -27,6 +27,8 @@ struct Board {
     // 勝敗を取得
     // 1: 自分勝ち、2: 相手勝ち、0: 引き分け
     int get_result() const;
+    // 対角線反転
+    static uint64_t transpose(uint64_t x);
     // Perftテスト
     // 深さdepthまでテスト
     static void perft(int depth);

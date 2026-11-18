@@ -249,6 +249,21 @@ void Board::pass() {
     std::swap(player, opponent);
 }
 
+// 対角線反転
+uint64_t Board::transpose(uint64_t x) {
+    uint64_t t;
+    // 4*4ブロックの反転
+    t = (x ^ (x >> 7)) & 0x00AA00AA00AA00AAULL;
+    x ^= t ^ (t << 7);
+    // 2*2ブロックの反転
+    t = (x ^ (x >> 14)) & 0x0000FFFF0000FFFFULL;
+    x ^= t ^ (t << 14);
+    // 1*1ブロックの反転
+    t = (x ^ (x >> 28)) & 0x00000000FFFFFFFFULL;
+    x ^= t ^ (t << 28);
+    return x;
+}
+
 // 自分の石数を取得
 int Board::player_num() const {
     return __builtin_popcountll(player);
