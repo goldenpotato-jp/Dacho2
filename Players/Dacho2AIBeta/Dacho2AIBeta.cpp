@@ -37,15 +37,17 @@ int Dacho2AIBeta::train_data_answer[25000000];
 
 // 重み
 // 辺+2Xの重み
-double Dacho2AIBeta::weight_edge[59049];
+float Dacho2AIBeta::weight_edge[59049];
 // 2行目の重み
-double Dacho2AIBeta::weight_line1[6561];
+float Dacho2AIBeta::weight_line1[6561];
 // 3行目の重み
-double Dacho2AIBeta::weight_line2[6561];
+float Dacho2AIBeta::weight_line2[6561];
 // 4行目の重み
-double Dacho2AIBeta::weight_line3[6561];
+float Dacho2AIBeta::weight_line3[6561];
 // 斜めの重み
-double Dacho2AIBeta::weight_diagonal[59049];
+float Dacho2AIBeta::weight_diagonal[59049];
+// 隅の重み
+float Dacho2AIBeta::weight_corner[59049];
 
 // コンストラクタ
 Dacho2AIBeta::Dacho2AIBeta(int min_depth, double min_time):
@@ -68,8 +70,10 @@ void Dacho2AIBeta::load_weight() {
     std::ifstream weight_line3_file("Players/Dacho2AIBeta/weight/weight_line3.txt");
     // 斜めの重み
     std::ifstream weight_diagonal_file("Players/Dacho2AIBeta/weight/weight_diagonal.txt");
+    // 隅の重み
+    std::ifstream weight_corner_file("Players/Dacho2AIBeta/weight/weight_corner.txt");
     // 読み込み失敗
-    if(!weight_edge_file.is_open() || !weight_line1_file.is_open() || !weight_line2_file.is_open() || !weight_line3_file.is_open() || !weight_diagonal_file.is_open()) {
+    if(!weight_edge_file.is_open() || !weight_line1_file.is_open() || !weight_line2_file.is_open() || !weight_line3_file.is_open() || !weight_diagonal_file.is_open() || !weight_corner_file.is_open()) {
         std::cout << "Error: fail to save\n";
         return;
     }
@@ -78,27 +82,32 @@ void Dacho2AIBeta::load_weight() {
     // 辺+2Xの重み
     for(int i = 0; i < 59049; ++i) {
         std::getline(weight_edge_file, line);
-        weight_edge[i] = stod(line);
+        weight_edge[i] = stof(line);
     }
     // 2行目の重み
     for(int i = 0; i < 6561; ++i) {
         std::getline(weight_line1_file, line);
-        weight_line1[i] = stod(line);
+        weight_line1[i] = stof(line);
     }
     // 3行目の重み
     for(int i = 0; i < 6561; ++i) {
         std::getline(weight_line2_file, line);
-        weight_line2[i] = stod(line);
+        weight_line2[i] = stof(line);
     }
     // 4行目の重み
     for(int i = 0; i < 6561; ++i) {
         std::getline(weight_line3_file, line);
-        weight_line3[i] = stod(line);
+        weight_line3[i] = stof(line);
     }
     // 斜めの重み
     for(int i = 0; i < 59049; ++i) {
         std::getline(weight_diagonal_file, line);
-        weight_diagonal[i] = stod(line);
+        weight_diagonal[i] = stof(line);
+    }
+    // 隅の重み
+    for(int i = 0; i < 59049; ++i) {
+        std::getline(weight_corner_file, line);
+        weight_corner[i] = stof(line);
     }
     // 読み込み成功
     std::cout << "Load successful\n";
@@ -118,8 +127,10 @@ void Dacho2AIBeta::save_weight() {
     std::ofstream weight_line3_file("Players/Dacho2AIBeta/weight/weight_line3.txt");
     // 斜めの重み
     std::ofstream weight_diagonal_file("Players/Dacho2AIBeta/weight/weight_diagonal.txt");
+    // 隅の重み
+    std::ofstream weight_corner_file("Players/Dacho2AIBeta/weight/weight_corner.txt");
     // 読み込み失敗
-    if(!weight_edge_file.is_open() || !weight_line1_file.is_open() || !weight_line2_file.is_open() || !weight_line3_file.is_open() || !weight_diagonal_file.is_open()) {
+    if(!weight_edge_file.is_open() || !weight_line1_file.is_open() || !weight_line2_file.is_open() || !weight_line3_file.is_open() || !weight_diagonal_file.is_open() || !weight_corner_file.is_open()) {
         std::cout << "Error: fail to save\n";
         return;
     }
@@ -133,6 +144,8 @@ void Dacho2AIBeta::save_weight() {
     for(int i = 0; i < 6561; ++i) weight_line3_file << weight_line3[i] << '\n';
     // 斜めの重み
     for(int i = 0; i < 59049; ++i) weight_diagonal_file << weight_diagonal[i] << '\n';
+    // 隅の重み
+    for(int i = 0; i < 59049; ++i) weight_corner_file << weight_corner[i] << '\n';
     // 保存完了
     std::cout << "Save successful\n";
 }
@@ -154,9 +167,9 @@ void Dacho2AIBeta::load_train_data() {
             std::getline(train_data_file, line);
             // 盤面に変換
             uint64_t player = 0, opponent = 0;
-            for(int j = 0; j < 64; ++j) {
-                if(line[j] == 'X') player |= 1ULL << j;
-                else if(line[j] == 'O') opponent |= 1ULL << j;
+            for(int k = 0; k < 64; ++k) {
+                if(line[k] == 'X') player |= 1ULL << k;
+                else if(line[k] == 'O') opponent |= 1ULL << k;
             }
             train_data_board[idx] = Board(player, opponent);
             // 答えを取得
@@ -169,14 +182,30 @@ void Dacho2AIBeta::load_train_data() {
 }
 
 // 盤面を評価
-double Dacho2AIBeta::eval_board(const Board& board) {
+float Dacho2AIBeta::eval_board(const Board& board) {
     // 自分の石
     uint64_t player = board.player;
     // 相手の石
     uint64_t opponent = board.opponent;
     // 評価値
-    double score = 0;
+    float score = 0;
 
+    // 斜めの重み（左上から）
+    score += weight_diagonal[BASE_2_TO_3[(player & 0x1) | (player >> 8 & 0x2) | (player >> 16 & 0x4) | (player >> 24 & 0x8) | (player >> 32 & 0x10) | (player >> 40 & 0x20) | (player >> 48 & 0x40) | (player >> 56 & 0x80) | (player << 7 & 0x100) | (player << 1 & 0x200)] + (BASE_2_TO_3[(opponent & 0x1) | (opponent >> 8 & 0x2) | (opponent >> 16 & 0x4) | (opponent >> 24 & 0x8) | (opponent >> 32 & 0x10) | (opponent >> 40 & 0x20) | (opponent >> 48 & 0x40) | (opponent >> 56 & 0x80) | (opponent << 7 & 0x100) | (opponent << 1 & 0x200)] << 1)];
+    // 斜めの重み（右上から）
+    score += weight_diagonal[BASE_2_TO_3[(player >> 7 & 0x1) | (player >> 13 & 0x2) | (player >> 19 & 0x4) | (player >> 25 & 0x8) | (player >> 31 & 0x10) | (player >> 37 & 0x20) | (player >> 43 & 0x40) | (player >> 49 & 0x80) | (player << 2 & 0x100) | (player >> 6 & 0x200)] + (BASE_2_TO_3[(opponent >> 7 & 0x1) | (opponent >> 13 & 0x2) | (opponent >> 19 & 0x4) | (opponent >> 25 & 0x8) | (opponent >> 31 & 0x10) | (opponent >> 37 & 0x20) | (opponent >> 43 & 0x40) | (opponent >> 49 & 0x80) | (opponent << 2 & 0x100) | (opponent >> 6 & 0x200)] << 1)];
+    // 斜めの重み（左下から）
+    score += weight_diagonal[BASE_2_TO_3[(player >> 56 & 0x1) | (player >> 48 & 0x2) | (player >> 40 & 0x4) | (player >> 32 & 0x8) | (player >> 24 & 0x10) | (player >> 16 & 0x20) | (player >> 8 & 0x40) | (player & 0x80) | (player >> 40 & 0x100) | (player >> 48 & 0x200)] + (BASE_2_TO_3[(opponent >> 56 & 0x1) | (opponent >> 48 & 0x2) | (opponent >> 40 & 0x4) | (opponent >> 32 & 0x8) | (opponent >> 24 & 0x10) | (opponent >> 16 & 0x20) | (opponent >> 8 & 0x40) | (opponent & 0x80) | (opponent >> 40 & 0x100) | (opponent >> 48 & 0x200)] << 1)];
+    // 斜めの重み（右下から）
+    score += weight_diagonal[BASE_2_TO_3[(player >> 63 & 0x1) | (player >> 53 & 0x2) | (player >> 43 & 0x4) | (player >> 33 & 0x8) | (player >> 23 & 0x10) | (player >> 13 & 0x20) | (player >> 3 & 0x40) | (player << 7 & 0x80) | (player >> 47 & 0x100) | (player >> 53 & 0x200)] + (BASE_2_TO_3[(opponent >> 63 & 0x1) | (opponent >> 53 & 0x2) | (opponent >> 43 & 0x4) | (opponent >> 33 & 0x8) | (opponent >> 23 & 0x10) | (opponent >> 13 & 0x20) | (opponent >> 3 & 0x40) | (opponent << 7 & 0x80) | (opponent >> 47 & 0x100) | (opponent >> 53 & 0x200)] << 1)];
+    // 隅の重み（左上）
+    score += weight_corner[BASE_2_TO_3[(player & 0xf) | (player >> 4 & 0x70) | (player >> 9 & 0x180) | (player >> 15 & 0x200)] + (BASE_2_TO_3[(opponent & 0xf) | (opponent >> 4 & 0x70) | (opponent >> 9 & 0x180) | (opponent >> 15 & 0x200)] << 1)];
+    // 隅の重み（右上）
+    score += weight_corner[BASE_2_TO_3[(player >> 7 & 0x1) | (player >> 5 & 0x2) | (player >> 3 & 0x4) | (player >> 1 & 0x8) | (player >> 11 & 0x10) | (player >> 9 & 0x20) | (player >> 7 & 0x40) | (player >> 16 & 0x80) | (player >> 14 & 0x100) | (player >> 22 & 0x200)] + (BASE_2_TO_3[(opponent >> 7 & 0x1) | (opponent >> 5 & 0x2) | (opponent >> 3 & 0x4) | (opponent >> 1 & 0x8) | (opponent >> 11 & 0x10) | (opponent >> 9 & 0x20) | (opponent >> 7 & 0x40) | (opponent >> 16 & 0x80) | (opponent >> 14 & 0x100) | (opponent >> 22 & 0x200)] << 1)];
+    // 隅の重み（左下）
+    score += weight_corner[BASE_2_TO_3[(player >> 56 & 0xf) | (player >> 44 & 0x70) | (player >> 33 & 0x180) | (player >> 23 & 0x200)] + (BASE_2_TO_3[(opponent >> 56 & 0xf) | (opponent >> 44 & 0x70) | (opponent >> 33 & 0x180) | (opponent >> 23 & 0x200)] << 1)];
+    // 隅の重み（右下）
+    score += weight_corner[BASE_2_TO_3[(player >> 63 & 0x1) | (player >> 61 & 0x2) | (player >> 59 & 0x4) | (player >> 57 & 0x8) | (player >> 51 & 0x10) | (player >> 49 & 0x20) | (player >> 47 & 0x40) | (player >> 40 & 0x80) | (player >> 38 & 0x100) | (player >> 30 & 0x200)] + (BASE_2_TO_3[(opponent >> 63 & 0x1) | (opponent >> 61 & 0x2) | (opponent >> 59 & 0x4) | (opponent >> 57 & 0x8) | (opponent >> 51 & 0x10) | (opponent >> 49 & 0x20) | (opponent >> 47 & 0x40) | (opponent >> 40 & 0x80) | (opponent >> 38 & 0x100) | (opponent >> 30 & 0x200)] << 1)];
     // 辺+2Xの重み（上）
     score += weight_edge[BASE_2_TO_3[(player & 0xff) | (player >> 1 & 0x100) | (player >> 5 & 0x200)] + (BASE_2_TO_3[(opponent & 0xff) | (opponent >> 1 & 0x100) | (opponent >> 5 & 0x200)] << 1)];
     // 辺+2Xの重み（下）
@@ -224,12 +253,28 @@ void Dacho2AIBeta::learn(int idx_start, int idx_end, double learning_rate) {
         // 盤面を取得
         uint64_t player = train_data_board[i].player, opponent = train_data_board[i].opponent;
         // 評価値を取得
-        double eval_score = eval_board(train_data_board[i]);
+        float eval_score = eval_board(train_data_board[i]);
         // 答えを取得
         int answer_score = train_data_answer[i];
         // 勾配を計算
-        double gradient = (eval_score - answer_score) * learning_rate;
+        float gradient = (eval_score - answer_score) * learning_rate;
 
+        // 斜めの重み（左上から）
+        weight_diagonal[BASE_2_TO_3[(player & 0x1) | (player >> 8 & 0x2) | (player >> 16 & 0x4) | (player >> 24 & 0x8) | (player >> 32 & 0x10) | (player >> 40 & 0x20) | (player >> 48 & 0x40) | (player >> 56 & 0x80) | (player << 7 & 0x100) | (player << 1 & 0x200)] + (BASE_2_TO_3[(opponent & 0x1) | (opponent >> 8 & 0x2) | (opponent >> 16 & 0x4) | (opponent >> 24 & 0x8) | (opponent >> 32 & 0x10) | (opponent >> 40 & 0x20) | (opponent >> 48 & 0x40) | (opponent >> 56 & 0x80) | (opponent << 7 & 0x100) | (opponent << 1 & 0x200)] << 1)] -= gradient;
+        // 斜めの重み（右上から）
+        weight_diagonal[BASE_2_TO_3[(player >> 7 & 0x1) | (player >> 13 & 0x2) | (player >> 19 & 0x4) | (player >> 25 & 0x8) | (player >> 31 & 0x10) | (player >> 37 & 0x20) | (player >> 43 & 0x40) | (player >> 49 & 0x80) | (player << 2 & 0x100) | (player >> 6 & 0x200)] + (BASE_2_TO_3[(opponent >> 7 & 0x1) | (opponent >> 13 & 0x2) | (opponent >> 19 & 0x4) | (opponent >> 25 & 0x8) | (opponent >> 31 & 0x10) | (opponent >> 37 & 0x20) | (opponent >> 43 & 0x40) | (opponent >> 49 & 0x80) | (opponent << 2 & 0x100) | (opponent >> 6 & 0x200)] << 1)] -= gradient;
+        // 斜めの重み（左下から）
+        weight_diagonal[BASE_2_TO_3[(player >> 56 & 0x1) | (player >> 48 & 0x2) | (player >> 40 & 0x4) | (player >> 32 & 0x8) | (player >> 24 & 0x10) | (player >> 16 & 0x20) | (player >> 8 & 0x40) | (player & 0x80) | (player >> 40 & 0x100) | (player >> 48 & 0x200)] + (BASE_2_TO_3[(opponent >> 56 & 0x1) | (opponent >> 48 & 0x2) | (opponent >> 40 & 0x4) | (opponent >> 32 & 0x8) | (opponent >> 24 & 0x10) | (opponent >> 16 & 0x20) | (opponent >> 8 & 0x40) | (opponent & 0x80) | (opponent >> 40 & 0x100) | (opponent >> 48 & 0x200)] << 1)] -= gradient;
+        // 斜めの重み（右下から）
+        weight_diagonal[BASE_2_TO_3[(player >> 63 & 0x1) | (player >> 53 & 0x2) | (player >> 43 & 0x4) | (player >> 33 & 0x8) | (player >> 23 & 0x10) | (player >> 13 & 0x20) | (player >> 3 & 0x40) | (player << 7 & 0x80) | (player >> 47 & 0x100) | (player >> 53 & 0x200)] + (BASE_2_TO_3[(opponent >> 63 & 0x1) | (opponent >> 53 & 0x2) | (opponent >> 43 & 0x4) | (opponent >> 33 & 0x8) | (opponent >> 23 & 0x10) | (opponent >> 13 & 0x20) | (opponent >> 3 & 0x40) | (opponent << 7 & 0x80) | (opponent >> 47 & 0x100) | (opponent >> 53 & 0x200)] << 1)] -= gradient;
+        // 隅の重み（左上）
+        weight_corner[BASE_2_TO_3[(player & 0xf) | (player >> 4 & 0x70) | (player >> 9 & 0x180) | (player >> 15 & 0x200)] + (BASE_2_TO_3[(opponent & 0xf) | (opponent >> 4 & 0x70) | (opponent >> 9 & 0x180) | (opponent >> 15 & 0x200)] << 1)] -= gradient;
+        // 隅の重み（右上）
+        weight_corner[BASE_2_TO_3[(player >> 7 & 0x1) | (player >> 5 & 0x2) | (player >> 3 & 0x4) | (player >> 1 & 0x8) | (player >> 11 & 0x10) | (player >> 9 & 0x20) | (player >> 7 & 0x40) | (player >> 16 & 0x80) | (player >> 14 & 0x100) | (player >> 22 & 0x200)] + (BASE_2_TO_3[(opponent >> 7 & 0x1) | (opponent >> 5 & 0x2) | (opponent >> 3 & 0x4) | (opponent >> 1 & 0x8) | (opponent >> 11 & 0x10) | (opponent >> 9 & 0x20) | (opponent >> 7 & 0x40) | (opponent >> 16 & 0x80) | (opponent >> 14 & 0x100) | (opponent >> 22 & 0x200)] << 1)] -= gradient;
+        // 隅の重み（左下）
+        weight_corner[BASE_2_TO_3[(player >> 56 & 0xf) | (player >> 44 & 0x70) | (player >> 33 & 0x180) | (player >> 23 & 0x200)] + (BASE_2_TO_3[(opponent >> 56 & 0xf) | (opponent >> 44 & 0x70) | (opponent >> 33 & 0x180) | (opponent >> 23 & 0x200)] << 1)] -= gradient;
+        // 隅の重み（右下）
+        weight_corner[BASE_2_TO_3[(player >> 63 & 0x1) | (player >> 61 & 0x2) | (player >> 59 & 0x4) | (player >> 57 & 0x8) | (player >> 51 & 0x10) | (player >> 49 & 0x20) | (player >> 47 & 0x40) | (player >> 40 & 0x80) | (player >> 38 & 0x100) | (player >> 30 & 0x200)] + (BASE_2_TO_3[(opponent >> 63 & 0x1) | (opponent >> 61 & 0x2) | (opponent >> 59 & 0x4) | (opponent >> 57 & 0x8) | (opponent >> 51 & 0x10) | (opponent >> 49 & 0x20) | (opponent >> 47 & 0x40) | (opponent >> 40 & 0x80) | (opponent >> 38 & 0x100) | (opponent >> 30 & 0x200)] << 1)] -= gradient;
         // 辺+2Xの重み（上）
         weight_edge[BASE_2_TO_3[(player & 0xff) | (player >> 1 & 0x100) | (player >> 5 & 0x200)] + (BASE_2_TO_3[(opponent & 0xff) | (opponent >> 1 & 0x100) | (opponent >> 5 & 0x200)] << 1)] -= gradient;
         // 辺+2Xの重み（下）
@@ -321,13 +366,6 @@ int Dacho2AIBeta::nega_alpha(const Board& board, int depth, int alpha, int beta)
     // ノード数を1増やす
     ++nodes;
 
-    // 葉ノードならば評価値を返す
-    if(depth == 0) return eval_board(board);
-
-    // 置換表枝刈り
-    uint64_t hash = board.hash(), val = transpose_table.find(hash);
-    if(val != Hashmap::NOT_FOUND) return val;
-
     // 合法手を取得
     uint64_t legal = board.get_legal();
     // 自分が着手できない場合
@@ -346,6 +384,13 @@ int Dacho2AIBeta::nega_alpha(const Board& board, int depth, int alpha, int beta)
         // 相手が着手できる場合はパスした盤面を探索
         return -nega_alpha(tmp, depth, -beta, -alpha);
     }
+
+    // 葉ノードならば評価値を返す
+    if(depth == 0) return eval_board(board);
+
+    // 置換表枝刈り
+    uint64_t hash = board.hash(), val = transpose_table.find(hash);
+    if(val != Hashmap::NOT_FOUND) return val;
 
     // 残り深さが浅い場合はmove orderingをしない
     if(depth <= 3) {

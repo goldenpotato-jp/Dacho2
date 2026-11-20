@@ -16,15 +16,17 @@ struct Dacho2AIBeta {
     // 重み
     // インデックスは空きマス: 0、自分の石: 1、相手の石: 2とする3進数
     // 辺+2Xの重み
-    static double weight_edge[59049];
+    static float weight_edge[59049];
     // 2行目の重み
-    static double weight_line1[6561];
+    static float weight_line1[6561];
     // 3行目の重み
-    static double weight_line2[6561];
+    static float weight_line2[6561];
     // 4行目の重み
-    static double weight_line3[6561];
+    static float weight_line3[6561];
     // 斜めの重み
-    static double weight_diagonal[59049];
+    static float weight_diagonal[59049];
+    // 隅の重み
+    static float weight_corner[59049];
 
     // 最低探索深さ
     int min_depth;
@@ -46,7 +48,7 @@ struct Dacho2AIBeta {
     // 学習データを読み込む
     static void load_train_data();
     // 盤面を評価
-    static double eval_board(const Board& board);
+    static float eval_board(const Board& board);
     // 学習
     // インデックスは半開区間
     static void learn(int idx_start, int idx_end, double learning_rate);
